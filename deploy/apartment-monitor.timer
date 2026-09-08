@@ -1,0 +1,11 @@
+[Unit]
+Description=Run apartment watchlist once daily
+
+[Timer]
+OnCalendar=*-*-* 09:17:00 America/Los_Angeles
+RandomizedDelaySec=20m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

@@ -1,0 +1,11 @@
+/.venv/
+/data/
+/reports/
+/exports/
+/htmlcov/
+/.coverage
+/.pytest_cache/
+/.apartment-monitor.lock
+__pycache__/
+*.py[cod]
+

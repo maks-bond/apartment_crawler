@@ -1,0 +1,114 @@
+[
+  {
+    "id": "sevens",
+    "name": "Sevens",
+    "official_url": "https://sevensmv.com/",
+    "availability_url": "https://sevensmv.com/floorplans/",
+    "adapter": "sevens",
+    "enabled": true,
+    "verified_at": "2026-09-07T22:38:33Z",
+    "metadata": {
+      "address": "777 W Middlefield Rd, Mountain View, CA 94043",
+      "city": "Mountain View",
+      "bedrooms_max": 1,
+      "collection_interval_hours": 24,
+      "eligibility": "Mixed inventory is possible; official district material describes staff housing. Current public units require manual eligibility confirmation.",
+      "budget": null,
+      "minimum_square_feet": null,
+      "move_in_window": null,
+      "parking_requirement": null,
+      "pet_requirement": null,
+      "lease_term_requirement": null
+    }
+  },
+  {
+    "id": "loft-house",
+    "name": "Loft House",
+    "official_url": "https://livelofthouse.com/",
+    "availability_url": "https://livelofthouse.com/floorplans/",
+    "adapter": "jonah",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:00:00Z",
+    "metadata": {"address":"150 S Taaffe St, Sunnyvale, CA 94086","city":"Sunnyvale","bedrooms_max":1,"collection_interval_hours":24}
+  },
+  {
+    "id": "aire",
+    "name": "AIRE",
+    "official_url": "https://aireliving.com/",
+    "availability_url": "https://aireliving.com/floorplans/",
+    "adapter": "jonah",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:00:00Z",
+    "metadata": {"address":"3401 Iron Point Dr, San Jose, CA 95134","city":"San Jose","bedrooms_max":1,"collection_interval_hours":24}
+  },
+  {
+    "id": "eaves-mountain-view-middlefield",
+    "name": "eaves Mountain View at Middlefield",
+    "official_url": "https://www.avaloncommunities.com/california/mountain-view-apartments/eaves-mountain-view-at-middlefield/",
+    "availability_url": "https://www.avaloncommunities.com/california/mountain-view-apartments/eaves-mountain-view-at-middlefield/",
+    "adapter": "avalon",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:00:00Z",
+    "metadata": {"address":"555 W Middlefield Rd, Mountain View, CA 94043","city":"Mountain View","bedrooms_max":1,"collection_interval_hours":24,"entrance_style":"exterior entry reported; manual verification pending"}
+  },
+  {
+    "id": "avalon-mountain-view",
+    "name": "Avalon Mountain View",
+    "official_url": "https://www.avaloncommunities.com/california/mountain-view-apartments/avalon-mountain-view/",
+    "availability_url": "https://www.avaloncommunities.com/california/mountain-view-apartments/avalon-mountain-view/",
+    "adapter": "avalon",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:00:00Z",
+    "metadata": {"address":"1600 Villa St, Mountain View, CA 94041","city":"Mountain View","bedrooms_max":1,"collection_interval_hours":24,"entrance_style":"mixed/exterior walkway reported; manual verification pending"}
+  },
+  {
+    "id": "the-martin",
+    "name": "The Martin",
+    "official_url": "https://livethemartin.com/",
+    "availability_url": "https://livethemartin.com/floorplans/",
+    "adapter": "martin",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:20:00Z",
+    "metadata": {"address":"240 S Taaffe St, Sunnyvale, CA 94086","city":"Sunnyvale","bedrooms_max":1,"collection_interval_hours":24}
+  },
+  {
+    "id": "rowe-at-pear-village",
+    "name": "Rowe at Pear Village",
+    "official_url": "https://rowepearvillage.com/",
+    "availability_url": "https://sightmap.com/app/api/v1/yjp2z959pxl/sightmaps/65351",
+    "adapter": "sightmap",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:45:00Z",
+    "metadata": {"address":"1265 Pear Ave, Mountain View, CA 94043","city":"Mountain View","bedrooms_max":1,"collection_interval_hours":24,"inventory_provider":"SightMap public API"}
+  },
+  {
+    "id": "flats-at-cityline",
+    "name": "The Flats at CityLine",
+    "official_url": "https://citylineflats.com/",
+    "availability_url": "https://sightmap.com/app/api/v1/nrkwnno8wd2/sightmaps/13556",
+    "adapter": "sightmap",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:45:00Z",
+    "metadata": {"address":"300 W Washington Ave, Sunnyvale, CA 94086","city":"Sunnyvale","bedrooms_max":1,"collection_interval_hours":24,"inventory_provider":"SightMap public API","eligibility":"Some floorplans are labeled BMR; unit-level affordable_housing_info is preserved when present."}
+  },
+  {
+    "id": "avelle",
+    "name": "Avelle",
+    "official_url": "https://liveavelle.com/",
+    "availability_url": "https://liveavelle.com/floorplans/",
+    "adapter": "yardi_wordpress",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:45:00Z",
+    "metadata": {"address":"1170 Spruce St, Mountain View, CA 94043","city":"Mountain View","bedrooms_max":1,"collection_interval_hours":24,"inventory_provider":"Yardi public WordPress actions","research_address_corrected":"Research claimed 2530 W El Camino Real; official site lists 1170 Spruce St."}
+  },
+  {
+    "id": "villa-del-sol",
+    "name": "Villa Del Sol",
+    "official_url": "https://www.villadelsolsunnyvale.com/",
+    "availability_url": "https://inventory.g5marketingcloud.com/graphql",
+    "adapter": "g5",
+    "enabled": true,
+    "verified_at": "2026-09-07T23:55:00Z",
+    "metadata": {"address":"355 E Evelyn Ave, Sunnyvale, CA 94086","city":"Sunnyvale","bedrooms_max":1,"collection_interval_hours":24,"inventory_provider":"G5 public GraphQL","location_urn":"g5-cl-1o6cbimmb1-amc-acacia-capital-corporation-sunnyvale-ca"}
+  }
+]

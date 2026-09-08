@@ -1,0 +1,2 @@
+# Apartment Monitor: once daily at 09:17 local server time.
+17 9 * * * /home/maksym/dev/apartment_crawler/scripts/daily-run.sh

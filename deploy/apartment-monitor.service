@@ -1,0 +1,10 @@
+[Unit]
+Description=Apartment watchlist collection
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/maksym/dev/apartment_crawler
+Environment=PYTHONPATH=src
+ExecStart=/usr/bin/python3 -m apartment_monitor collect
+ExecStart=/usr/bin/python3 -m apartment_monitor report
+
