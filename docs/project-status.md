@@ -1,14 +1,33 @@
 # Apartment Monitor Project Status
 
-Last updated: 2026-09-07 (America/Los_Angeles)
+Last updated: 2026-10-11 (America/Los_Angeles)
+
+## October 11 update
+
+The daily community monitor remains scheduled and has 35 observation dates since
+September 7. Supported coverage remains 10 communities. Recent collection has
+usable inventory from 7, explicit no matching inventory from Villa Del Sol, and
+HTTP 403 failures for The Martin and Avelle. The initial validation table below
+is historical and must not be used as today's availability.
+
+A separate Craigslist monitor now collects nine daily rental/room/sublet search
+samples across San Francisco, Peninsula and South Bay. First live run: 1,867 unique
+listing IDs, coordinates for all 1,867, and 90 successful detail pages with no
+request/parser failures. It stores a separate SQLite database with daily price
+history, canonical-ID deduplication and geographic cells. The cron
+runner now invokes both monitors, with a random daily start between 09:07 and
+09:27 local time. Craigslist uses 8–15-second request pauses and a persistent
+cooldown after access blocks/rate limits. The full suite has 25 passing tests. See
+[Craigslist implementation and operations](craigslist-monitor-plan.md) for scope,
+source limitations, database queries and reproducible commands.
 
 ## Objective
 
 Collect daily studio and small one-bedroom availability from official apartment-community websites, retain append-only price and availability history in SQLite, and generate weekly artifacts for later market-condition analysis. The destination preference is 280 N Bernardo Ave, Mountain View. Route and bicycle evidence remains separate from rental observations and has not yet been validated.
 
-## Coverage and today's verified result
+## Coverage and initial verified result (September 7)
 
-**10 of the 32 research-candidate apartment complexes have working collectors.** The remaining 22 do not yet have a validated collector. Counts below are today's changing availability snapshot, not a measure of crawler coverage.
+**10 of the 32 research-candidate apartment complexes have working collectors.** The remaining 22 do not yet have a validated collector. Counts below are the initial availability snapshot, not a measure of crawler coverage.
 
 | Community | City | Adapter | Latest status | Matching exact units |
 |---|---|---|---|---:|
@@ -41,11 +60,12 @@ Avelle's official site currently lists 1170 Spruce St, Mountain View, rather tha
 
 ## Operations
 
-The installed user crontab runs once daily at 09:17 in the machine's local time:
+The installed user crontab launches a scheduler at 09:07 local time; it waits
+0–20 random minutes before running both collectors once daily:
 
 ```cron
-# Apartment Monitor: once daily at 09:17 local server time.
-17 9 * * * /home/maksym/dev/apartment_crawler/scripts/daily-run.sh
+# Apartment Monitor: once daily, random start 09:07–09:27 local server time.
+7 9 * * * /home/maksym/dev/apartment_crawler/scripts/scheduled-run.py
 ```
 
 The runner collects all enabled communities sequentially, continues after individual failures, writes structured per-community results and errors to `data/logs/daily.log`, then regenerates the Markdown report and CSV/JSON exports. A lock prevents overlapping collection runs.

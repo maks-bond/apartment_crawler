@@ -1,0 +1,23 @@
+{
+  "regions": {
+    "sfc": "San Francisco search area",
+    "pen": "Peninsula search area",
+    "sby": "South Bay search area"
+  },
+  "categories": {
+    "apa": "rentals",
+    "roo": "rooms",
+    "sub": "sublets"
+  },
+  "target_counties": [
+    "San Francisco",
+    "San Mateo",
+    "Santa Clara"
+  ],
+  "detail_limit": 90,
+  "detail_refresh_days": 7,
+  "geo_cell_degrees": 0.01,
+  "request_delay_min_seconds": 8,
+  "request_delay_max_seconds": 15,
+  "block_cooldown_hours": 48
+}

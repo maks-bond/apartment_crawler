@@ -16,7 +16,27 @@ PYTHONPATH=src python3 -m apartment_monitor export
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
-Runtime data lives under `data/`, `reports/`, and `exports/` and is excluded from Git. The installed crontab invokes `scripts/daily-run.sh` at 09:17 local time every day.
+Runtime data lives under `data/`, `reports/`, and `exports/` and is excluded from Git.
+The installed crontab invokes `scripts/scheduled-run.py` at 09:07 local time daily;
+it waits a random 0–20 minutes before running `scripts/daily-run.sh`, giving an
+actual start between 09:07 and 09:27. The chosen delay is logged.
+
+## Craigslist individual listings
+
+The daily runner also collects nine Craigslist search samples: rentals, rooms, and
+sublets in San Francisco, Peninsula, and South Bay. This has its own package,
+configuration and SQLite database; community inventory remains separate.
+
+```bash
+PYTHONPATH=src python3 -m listing_monitor collect
+PYTHONPATH=src python3 -m listing_monitor report
+```
+
+See [Craigslist operations and limitations](docs/craigslist-monitor-plan.md).
+The database is `data/craigslist.sqlite3`; reports are
+`reports/craigslist-latest.md` and `reports/craigslist-stats.json`.
+These are sampled ads with approximate advertised coordinates, not complete
+market inventory. Repeated post IDs are deduplicated; daily observations remain.
 
 ## Status meanings
 
