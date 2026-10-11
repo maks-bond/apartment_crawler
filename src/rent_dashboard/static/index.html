@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Rent Observatory</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="eyebrow">BAY AREA · HOUSING HISTORY</div>
+        <h1>Rent Observatory<span class="brand-dot">.</span></h1>
+        <p>What’s listed today. How the market is moving.</p>
+      </div>
+      <div class="header-right">
+        <span class="local-badge">● Local · read only</span
+        ><button id="refresh" class="outline">Refresh data ↻</button>
+      </div>
+    </header>
+    <main>
+      <form id="filters" class="filter-panel">
+        <div class="filter-top">
+          <label
+            >Data source<select name="source" id="source">
+              <option value="craigslist">Craigslist listings</option>
+              <option value="communities">Apartment communities</option>
+            </select></label
+          ><label
+            >City<select name="city" id="city">
+              <option value="">All cities</option>
+            </select></label
+          ><label id="category-label"
+            >Listing category<select name="category">
+              <option value="">All categories</option>
+              <option value="rentals">Full rentals</option>
+              <option value="rooms">Rooms & shares</option>
+              <option value="sublets">Sublets & temporary</option>
+            </select></label
+          ><label
+            >Bedrooms<select name="bedrooms">
+              <option value="">All sizes</option>
+              <option value="0">Studio</option>
+              <option value="1">1 bedroom</option>
+              <option value="2">2 bedrooms</option>
+              <option value="3">3 bedrooms</option>
+              <option value="4">4 bedrooms</option>
+              <option value="5">5 bedrooms</option>
+            </select></label
+          ><label
+            >Rent period<select name="period" id="period">
+              <option value="month">Monthly</option>
+              <option value="week">Weekly</option>
+              <option value="night">Nightly / daily</option>
+              <option value="unknown">Uncertain</option>
+            </select></label
+          >
+        </div>
+        <div class="filter-bottom">
+          <label
+            >History from<input
+              name="from"
+              id="from"
+              type="date"
+              required /></label
+          ><label
+            >View through<input name="to" id="to" type="date" required /></label
+          ><label
+            >Min sq ft<input
+              name="sqft_min"
+              type="number"
+              min="0"
+              placeholder="Any" /></label
+          ><label
+            >Max sq ft<input
+              name="sqft_max"
+              type="number"
+              min="0"
+              placeholder="Any" /></label
+          ><label id="property-label"
+            >Community<select name="property" id="property">
+              <option value="">All communities</option>
+            </select></label
+          ><label class="check" id="short-label"
+            ><input name="short_term" value="1" type="checkbox" /> Short-term
+            only</label
+          ><button type="submit">Apply filters</button>
+        </div>
+        <details class="geofence-controls">
+          <summary>Geofence coordinates</summary>
+          <label
+            >West, south, east, north<input
+              id="bbox"
+              name="bbox"
+              placeholder="-122.15,37.35,-122.05,37.45" /></label
+          ><button id="clear-geo" type="button" class="outline">
+            Clear geofence</button
+          ><small
+            >You can also click a cell or drag a rectangle on the map. Points
+            are approximate.</small
+          >
+        </details>
+      </form>
+      <div id="error" class="error" role="alert" hidden></div>
+      <div id="notice" class="notice" aria-live="polite">
+        Loading local observations…
+      </div>
+      <section
+        class="kpis"
+        id="kpis"
+        aria-label="Current market snapshot"
+      ></section>
+      <div class="section-nav">
+        <nav aria-label="Dashboard views">
+          <button data-view="current" class="active" aria-selected="true">
+            Current view</button
+          ><button data-view="trends" aria-selected="false">Trends</button
+          ><button data-view="health" aria-selected="false">
+            Collection health
+          </button>
+        </nav>
+        <span id="snapshot-label"></span>
+      </div>
+      <section id="view-current" class="view">
+        <div class="current-grid">
+          <article class="panel map-panel">
+            <div class="panel-heading">
+              <div>
+                <div class="eyebrow">GEOGRAPHY</div>
+                <h2>Inventory by location</h2>
+              </div>
+              <label class="compact"
+                >Color by<select id="map-metric">
+                  <option value="inventory">Observed listings</option>
+                  <option value="median_price">Median asking rent</option>
+                  <option value="median_psf">Median rent / sq ft</option>
+                </select></label
+              >
+            </div>
+            <div id="map"></div>
+            <div id="map-legend" class="map-legend"></div>
+            <button id="fit-map" class="outline" type="button">
+              Fit all points
+            </button>
+            <p class="caption">
+              Coordinate grid, not a street map. Click a cell to inspect it;
+              drag to select a geofence.
+            </p>
+          </article>
+          <article class="panel city-panel">
+            <div class="panel-heading">
+              <div>
+                <div class="eyebrow">CITY COMPARISON</div>
+                <h2>Where the listings are</h2>
+              </div>
+            </div>
+            <p class="caption">Click a city to filter this dashboard.</p>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>City</th>
+                    <th>Observed</th>
+                    <th>Median rent</th>
+                    <th>$/sq ft</th>
+                    <th>Sq ft n</th>
+                  </tr>
+                </thead>
+                <tbody id="cities"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+        <article class="panel inventory-panel">
+          <div class="panel-heading">
+            <div>
+              <div class="eyebrow">INDIVIDUAL HISTORY</div>
+              <h2>Explore observed listings</h2>
+              <p class="caption">
+                Open a listing to see its price history and observation dates.
+              </p>
+            </div>
+            <div class="table-tools">
+              <label
+                >Search<input
+                  id="listing-search"
+                  type="search"
+                  placeholder="Title, city, listing ID…" /></label
+              ><label
+                >Sort<select id="sort">
+                  <option value="price">Lowest asking price</option>
+                  <option value="psf">Lowest rent / sq ft</option>
+                  <option value="span">Longest observed span</option>
+                  <option value="recent">Most recently observed</option>
+                </select></label
+              >
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Listing / unit</th>
+                  <th>City</th>
+                  <th>Beds</th>
+                  <th>Asking rent</th>
+                  <th>Sq ft</th>
+                  <th>$/sq ft</th>
+                  <th>Observed span</th>
+                  <th>Last observed</th>
+                </tr>
+              </thead>
+              <tbody id="listings"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="page-label"></span>
+            <div>
+              <button id="prev" class="outline">← Previous</button
+              ><button id="next" class="outline">Next →</button>
+            </div>
+          </div>
+        </article>
+      </section>
+      <section id="view-trends" class="view" hidden>
+        <div class="trend-intro">
+          <div>
+            <div class="eyebrow">DAILY OBSERVATIONS</div>
+            <h2>Price and inventory over time</h2>
+          </div>
+          <p>
+            Filters apply to every day. Sample medians can change when the mix
+            of listings changes; the matched-listing chart follows comparable
+            identities.
+          </p>
+        </div>
+        <div class="chart-grid">
+          <article class="panel">
+            <h3>Median asking rent</h3>
+            <p class="caption">
+              Positive advertised prices · selected rent period
+            </p>
+            <div id="chart-price"></div>
+          </article>
+          <article class="panel">
+            <h3>Median rent per square foot</h3>
+            <p class="caption">
+              Known dwelling area only · rooms with uncertain area excluded
+            </p>
+            <div id="chart-psf"></div>
+          </article>
+          <article class="panel">
+            <h3>Observed inventory</h3>
+            <p class="caption">
+              Unique listing IDs or community units · missing days stay blank
+            </p>
+            <div id="chart-inventory"></div>
+          </article>
+          <article class="panel">
+            <h3>Same-listing price movement</h3>
+            <p class="caption">
+              Median change vs previous calendar day · unchanged listings
+              included · same usable source set required
+            </p>
+            <div id="chart-matched"></div>
+          </article>
+        </div>
+        <article class="panel">
+          <h3>Daily sample & coverage</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date (UTC)</th>
+                  <th>Sources usable</th>
+                  <th>Observed</th>
+                  <th>Priced n</th>
+                  <th>Median rent</th>
+                  <th>Sq ft n</th>
+                  <th>$/sq ft</th>
+                  <th>Matched n</th>
+                  <th>Matched change</th>
+                </tr>
+              </thead>
+              <tbody id="daily"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+      <section id="view-health" class="view" hidden>
+        <div class="trend-intro">
+          <div>
+            <div class="eyebrow">SOURCE RELIABILITY</div>
+            <h2>Did collection work?</h2>
+          </div>
+          <p>
+            Failed or skipped collection never means zero inventory. HTTP 403 is
+            an access block; HTTP 429 indicates rate limiting. Neither alone
+            proves a permanent ban.
+          </p>
+        </div>
+        <article class="panel">
+          <h3>Daily source coverage</h3>
+          <div id="health-calendar"></div>
+          <p class="caption">
+            Green: all expected sources returned usable data. Amber: partial
+            coverage. Red: recorded failures without usable data. Gray: no
+            usable attempt recorded.
+          </p>
+        </article>
+        <article class="panel">
+          <h3>Latest attempt per source, through selected date</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Attempt time</th>
+                  <th>HTTP</th>
+                  <th>Last usable snapshot</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="health"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="panel">
+          <h3>Detail collection failures in this period</h3>
+          <div id="detail-failures"></div>
+        </article>
+      </section>
+      <footer>
+        Reading local SQLite observations. Viewing this dashboard makes no
+        requests to apartment websites or Craigslist. Daily collection runs
+        independently.<br />Craigslist ads are partial samples; map locations
+        are advertised and approximate. Observation spans do not prove
+        continuous availability or time on market.
+      </footer>
+    </main>
+    <dialog id="history-dialog">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">LISTING HISTORY</div>
+          <h2 id="history-title"></h2>
+        </div>
+        <button
+          id="close-dialog"
+          class="outline"
+          aria-label="Close listing history"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="history-content"></div>
+    </dialog>
+  </body>
+</html>

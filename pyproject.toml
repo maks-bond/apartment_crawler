@@ -15,9 +15,13 @@ test = ["pytest>=8,<10"]
 [project.scripts]
 apartment-monitor = "apartment_monitor.cli:main"
 listing-monitor = "listing_monitor.cli:main"
+rent-dashboard = "rent_dashboard.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+rent_dashboard = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

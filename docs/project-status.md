@@ -4,6 +4,14 @@ Last updated: 2026-10-11 (America/Los_Angeles)
 
 ## October 11 update
 
+Rent Observatory is now an on-demand local dashboard for both datasets. It reads
+SQLite without changing it, separates current snapshots from daily trends, shows
+square-footage/source coverage and failure history, and supports city/geofence
+filters and individual listing histories. Run `scripts/dashboard.sh` locally or
+use the SSH configuration helper on your browser computer. See
+[dashboard launch and SSH instructions](dashboard.md). The dashboard is not
+scheduled; daily crawlers continue independently.
+
 The daily community monitor remains scheduled and has 35 observation dates since
 September 7. Supported coverage remains 10 communities. Recent collection has
 usable inventory from 7, explicit no matching inventory from Villa Del Sol, and
@@ -17,10 +25,16 @@ request/parser failures. It stores a separate SQLite database with daily price
 history, canonical-ID deduplication and geographic cells. The cron
 runner now invokes both monitors, with a random daily start between 09:07 and
 09:27 local time. Craigslist uses 8–15-second request pauses and a persistent
-cooldown after access blocks/rate limits. The full suite has 26 passing tests, including
+cooldown after access blocks/rate limits. The collector suite has 26 passing tests, including
 exclusion of zero-price ads from market-price statistics. See
 [Craigslist implementation and operations](craigslist-monitor-plan.md) for scope,
 source limitations, database queries and reproducible commands.
+
+Eight dashboard/SSH regression tests bring the full Python suite to 34 passing
+tests. Real-data Chromium checks also pass for filters, geographic cells, listing
+histories, both sources, trend/health views and mobile layout. No browser errors
+or external web requests were observed. The preview server is stopped after QA;
+the dashboard is launched on demand through a loopback-bound SSH tunnel.
 
 ## Objective
 

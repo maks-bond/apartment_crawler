@@ -38,6 +38,18 @@ The database is `data/craigslist.sqlite3`; reports are
 These are sampled ads with approximate advertised coordinates, not complete
 market inventory. Repeated post IDs are deduplicated; daily observations remain.
 
+## Local dashboard
+
+Run `./scripts/dashboard.sh` when you want to view the data, then open
+http://127.0.0.1:8765. Ctrl+C stops it. The read-only dashboard includes current
+inventory, city/geographic-cell filters, rent and inventory trends, individual
+price histories and collection health for both datasets. It has no runtime
+dependencies beyond Python and makes no external requests.
+
+See [dashboard and SSH setup](docs/dashboard.md) for the laptop configuration
+script and the `ssh apartment-dashboard` command, which starts the server and
+tunnel together. The website is not an always-running service.
+
 ## Status meanings
 
 - `success_complete`: the expected payload parsed completely and contains matching units.
