@@ -17,7 +17,8 @@ request/parser failures. It stores a separate SQLite database with daily price
 history, canonical-ID deduplication and geographic cells. The cron
 runner now invokes both monitors, with a random daily start between 09:07 and
 09:27 local time. Craigslist uses 8–15-second request pauses and a persistent
-cooldown after access blocks/rate limits. The full suite has 25 passing tests. See
+cooldown after access blocks/rate limits. The full suite has 26 passing tests, including
+exclusion of zero-price ads from market-price statistics. See
 [Craigslist implementation and operations](craigslist-monitor-plan.md) for scope,
 source limitations, database queries and reproducible commands.
 

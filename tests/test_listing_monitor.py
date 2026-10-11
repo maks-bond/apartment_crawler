@@ -35,6 +35,23 @@ def detail(post_id='1234567890'):
 
 
 class ListingTests(unittest.TestCase):
+    def test_zero_price_is_preserved_but_excluded_from_market_prices(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db = connect(Path(temp)/'test.sqlite3')
+            for day,price in [('2026-10-01T12:00:00+00:00',0),('2026-10-02T12:00:00+00:00',2100)]:
+                run = db.execute('INSERT INTO runs(started_at,search_key,url,status) VALUES(?,?,?,?)',
+                                 (day,'pen:apa','https://sfbay.craigslist.org/search/pen/apa','partial')).lastrowid
+                save(db,run,parse_search(search(price),'rentals')[0],day)
+            history = db.execute('SELECT * FROM listing_history').fetchone()
+            self.assertEqual(history['lowest_monthly_price'],2100)
+            daily = db.execute('SELECT * FROM daily_region_summary ORDER BY day_utc LIMIT 1').fetchone()
+            self.assertEqual(daily['observed_listings'],1)
+            self.assertEqual(daily['priced_listings'],0)
+            self.assertIsNone(daily['mean_price'])
+            self.assertEqual(db.execute('SELECT price FROM observations ORDER BY id LIMIT 1').fetchone()[0],0)
+            self.assertEqual(db.execute('SELECT count(*) FROM price_changes').fetchone()[0],0)
+            db.close()
+
     def test_request_pause_is_bounded_and_first_request_is_immediate(self):
         with tempfile.TemporaryDirectory() as temp:
             policy = RequestPolicy(Path(temp),{'request_delay_min_seconds':8,'request_delay_max_seconds':15})

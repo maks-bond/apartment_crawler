@@ -36,6 +36,8 @@ Live collection on October 11:
   ambiguous. Bare housing prices default to monthly with explicit assumption
   provenance. They are not verified monthly quotes.
 - Zero price changes so far: one collection establishes a baseline, not a trend.
+- 67 ads display `$0`. Their raw asking amounts remain recorded, but nonpositive
+  prices are excluded from rent statistics and price-change events.
 
 ## Source validation and completeness
 
@@ -120,7 +122,7 @@ PYTHONPATH=src python3 -m listing_monitor report
 PYTHONPATH=src python3 -m unittest discover -s tests -q
 ```
 
-All 25 tests passed, including 11 Craigslist/scheduler tests covering both ID formats,
+All 26 tests passed, including 12 Craigslist/scheduler tests covering both ID formats,
 canonical-ID merging, multiple days of price history, overlapping searches,
 room square-footage uncertainty, rate-period separation, missing coordinates,
 failed details, failed searches, raw artifacts, geographic aggregation, randomized
@@ -144,6 +146,8 @@ observation timestamp because cached square feet/attributes can be stale.
 Room bedroom counts may describe the shared dwelling, not the rented room.
 
 `price_changes` records comparable same-ID, same-category, same-period changes.
+Nonpositive amounts are retained as observations but excluded from price metrics
+and changes, because a zero-price ad can mean an unspecified asking rent.
 Nightly/weekly asking prices are not converted to monthly equivalents.
 `listing_history` exposes first/last seen, number of distinct observed days, and
 monthly low/high asking prices. `observed_span_days` is elapsed time between

@@ -38,8 +38,8 @@ CREATE VIEW IF NOT EXISTS listing_history AS
  SELECT l.id,l.first_seen,l.last_seen,
  CAST(julianday(l.last_seen)-julianday(l.first_seen) AS INTEGER) AS observed_span_days,
  count(DISTINCT substr(o.observed_at,1,10)) AS observed_days,
- min(CASE WHEN price_period='month' THEN price END) AS lowest_monthly_price,
- max(CASE WHEN price_period='month' THEN price END) AS highest_monthly_price
+ min(CASE WHEN price_period='month' AND price>0 THEN price END) AS lowest_monthly_price,
+ max(CASE WHEN price_period='month' AND price>0 THEN price END) AS highest_monthly_price
  FROM listings l JOIN observations o ON o.listing_id=l.id GROUP BY l.id;
 CREATE VIEW IF NOT EXISTS geo_history AS
  SELECT o.*,json_extract(data_json,'$.latitude') AS latitude,
@@ -51,7 +51,7 @@ CREATE VIEW IF NOT EXISTS daily_geo_summary AS
  ORDER BY observed_at DESC,id DESC) AS rank FROM daily_sample),
  sample AS (SELECT *,json_extract(data_json,'$.geo_cell') AS geo_cell FROM ranked WHERE rank=1)
  SELECT substr(observed_at,1,10) AS day_utc,geo_cell,category,bedrooms,price_period,
- count(*) AS observed_listings,count(price) AS priced_listings,avg(price) AS mean_price,
+ count(*) AS observed_listings,count(CASE WHEN price>0 THEN price END) AS priced_listings,avg(CASE WHEN price>0 THEN price END) AS mean_price,
  sum(CASE WHEN sqft>0 AND sqft_scope='dwelling' AND category!='rooms' AND price>0 THEN 1 ELSE 0 END) AS sqft_priced_listings,
  avg(CASE WHEN sqft>0 AND sqft_scope='dwelling' AND category!='rooms' AND price>0 THEN price/sqft END) AS mean_price_per_sqft
  FROM sample WHERE geo_cell IS NOT NULL GROUP BY day_utc,geo_cell,category,bedrooms,price_period;
@@ -61,8 +61,8 @@ CREATE VIEW IF NOT EXISTS daily_region_summary AS
  ORDER BY observed_at DESC,id DESC) AS rank FROM daily_sample)
  SELECT substr(observed_at,1,10) AS day_utc,county,city,category,bedrooms,price_period,
  CASE WHEN sqft_scope='dwelling' THEN CAST(sqft/100 AS INTEGER)*100 END AS sqft_bucket,
- count(*) AS observed_listings,count(price) AS priced_listings,
- min(price) AS minimum_price,avg(price) AS mean_price,max(price) AS maximum_price,
+ count(*) AS observed_listings,count(CASE WHEN price>0 THEN price END) AS priced_listings,
+ min(CASE WHEN price>0 THEN price END) AS minimum_price,avg(CASE WHEN price>0 THEN price END) AS mean_price,max(CASE WHEN price>0 THEN price END) AS maximum_price,
  sum(CASE WHEN sqft>0 AND sqft_scope='dwelling' AND category!='rooms' AND price>0 THEN 1 ELSE 0 END) AS sqft_priced_listings,
  avg(CASE WHEN sqft>0 AND sqft_scope='dwelling' AND category!='rooms' AND price>0 THEN price/sqft END) AS mean_price_per_sqft
  FROM ranked WHERE rank=1 GROUP BY day_utc,county,city,category,bedrooms,price_period,sqft_bucket;
@@ -86,7 +86,11 @@ def connect(path):
     db = sqlite3.connect(path)
     db.row_factory = sqlite3.Row
     db.execute('PRAGMA journal_mode=WAL')
+    if db.execute('PRAGMA user_version').fetchone()[0] < 1:
+        for view in ['listing_history','daily_geo_summary','daily_region_summary']:
+            db.execute(f'DROP VIEW IF EXISTS {view}')
     db.executescript(SCHEMA)
+    db.execute('PRAGMA user_version=1')
     db.commit()
     return db
 
@@ -146,6 +150,7 @@ def save(db, run_id, row, now, fresh_detail=None):
             (run_id,key,now,row['category'],row['city'],row['county'],row['price'],row['price_period'],
              row['sqft'],row['sqft_scope'],row['bedrooms'],json.dumps(row, sort_keys=True)))
     if (not existing and previous and previous['price'] is not None and row['price'] is not None
+        and previous['price'] > 0 and row['price'] > 0
         and previous['price_period'] == row['price_period'] != 'unknown'
         and previous['price'] != row['price']):
         db.execute('INSERT INTO price_changes(listing_id,observed_at,previous_observation_id,'
