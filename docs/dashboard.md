@@ -232,3 +232,11 @@ restrict the key to its hosted domains; localhost may need authorization in CART
 Failed CARTO tiles automatically fall back to OpenStreetMap. The key was not printed
 or committed. Browser interactions passed with mocked tiles; live CARTO access is
 not yet working from this origin.
+
+## CARTO paused (October 30)
+
+OpenStreetMap is the default and no CARTO requests are attempted. The locally saved
+key is retained outside Git but is not exposed by the API while CARTO is disabled.
+To explicitly enable CARTO later, set `"provider": "carto"` in
+`data/map-config.json` after resolving key authorization. Leaving provider unset
+uses OpenStreetMap even if a saved key exists.
