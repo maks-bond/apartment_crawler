@@ -68,15 +68,17 @@ const { chromium } = require("playwright");
       .locator("#city option")
       .evaluateAll((options) => options.map((o) => o.value).filter(Boolean));
     if (cities.length) {
-      await page.locator("#city").selectOption(cities[0]);
-      const city = await update(() =>
-        page.locator('#filters button[type="submit"]').click(),
-      );
-      assert.ok(city.listings.every((r) => r.city === cities[0]));
-      await page.locator("#city").selectOption("");
-      await update(() =>
-        page.locator('#filters button[type="submit"]').click(),
-      );
+      const before = Number(await page.locator("#geo-svg").getAttribute("data-scale"));
+      const selectedCity = cities.includes("Mountain View") ? "Mountain View" : cities[0];
+      const city = await update(() => page.locator("#city").selectOption(selectedCity));
+      assert.ok(city.listings.every((r) => r.city === selectedCity));
+      const focused = Number(await page.locator("#geo-svg").getAttribute("data-scale"));
+      assert.ok(focused > before, "Selecting a city must zoom immediately");
+      await page.locator("#zoom-in").click();
+      assert.equal(Number(await page.locator("#geo-svg").getAttribute("data-scale")), focused * 2);
+      await page.locator("#zoom-out").click();
+      assert.equal(Number(await page.locator("#geo-svg").getAttribute("data-scale")), focused);
+      await update(() => page.locator("#city").selectOption(""));
     }
     if (await page.locator(".listing-name").count()) {
       await page.locator(".listing-name").first().click();

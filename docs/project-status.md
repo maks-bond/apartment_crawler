@@ -122,3 +122,12 @@ sqlite3 data/apartment_monitor.sqlite3 'SELECT * FROM collection_failures;'
 ## Next expansion targets
 
 The other 22 candidates remain unsupported today. Useful next provider families are Prometheus, Essex, and Irvine Company, though several return security checkpoints from this machine. Catalyst exposes exact inventory through its official web rendering but its raw page currently challenges this collector. ILARA and Montrose advertise SightMap maps, making them possible additions once their public map identifiers can be validated. Commute/bicycle routing, thresholds for notifications, minimum square feet, budget, parking, pets, and desired lease/move-in windows remain unconfigured.
+
+## October 30: clearer map and immediate city zoom
+
+Selecting a city now applies immediately and clears the previous geofence. The
+map fits that city's listings; +/− buttons adjust zoom without changing the data
+filter. Street tiles render at a sharper resolution, the redundant coordinate grid
+and duplicate city labels are hidden when streets are visible, and inventory fills
+are lighter so roads remain readable. Tile images are clipped to the map panel.
+Browser regression checks cover automatic city zoom and both zoom controls.

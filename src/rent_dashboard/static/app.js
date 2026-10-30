@@ -7,7 +7,8 @@ let meta,
   visible = [],
   loadingId = 0,
   viewport = null,
-  fitAll = false;
+  fitAll = false,
+  mapZoom = 0;
 const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,
@@ -107,6 +108,7 @@ async function load() {
     const result = await api("/api/dashboard?" + params);
     if (id !== loadingId) return;
     data = result;
+    mapZoom = 0;
     page = 0;
     render();
   } catch (error) {
@@ -423,7 +425,7 @@ function renderMap() {
   const invY = v => Math.atan(Math.sinh(Math.PI * (1 - 2 * v))) * 180 / Math.PI;
   const cx = ((extent[0] + extent[2]) / 2 + 180) / 360;
   const cy = (mercY(extent[1]) + mercY(extent[3])) / 2;
-  const scale = Math.min((W - pad * 2) / ((extent[2] - extent[0]) / 360), (H - pad * 2) / (mercY(extent[1]) - mercY(extent[3])));
+  const scale = 2 ** mapZoom * Math.min((W - pad * 2) / ((extent[2] - extent[0]) / 360), (H - pad * 2) / (mercY(extent[1]) - mercY(extent[3])));
   const x = lon => W / 2 + ((lon + 180) / 360 - cx) * scale;
   const y = lat => H / 2 + (mercY(lat) - cy) * scale;
   viewport = { x, y, lon: px => (cx + (px - W / 2) / scale) * 360 - 180,
@@ -433,7 +435,7 @@ function renderMap() {
     hi = Math.max(...priced.map((c) => c[metric]));
   let svg = `<svg id="geo-svg" viewBox="0 0 ${W} ${H}" aria-label="Observed listing geographic cells. Click a cell or drag a rectangle to filter." role="img">`;
   if ($("map-background").checked) {
-    const z = Math.max(0, Math.min(16, Math.floor(Math.log2(scale / 256))));
+    const z = Math.max(0, Math.min(16, Math.ceil(Math.log2(scale / 256))));
     const n = 2 ** z, tileSize = scale / n;
     const west = cx - W / 2 / scale, north = cy - H / 2 / scale;
     for (let tx = Math.floor(west * n); tx <= Math.floor((west + W / scale) * n); tx++) {
@@ -442,7 +444,7 @@ function renderMap() {
       }
     }
   }
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; !$("map-background").checked && i < 5; i++) {
     const lon = extent[0] + ((extent[2] - extent[0]) * i) / 4,
       lat = extent[1] + ((extent[3] - extent[1]) * i) / 4;
     svg += `<line x1="${x(lon)}" y1="20" x2="${x(lon)}" y2="${H - 25}" stroke="#e2e8e0"/><text x="${x(lon)}" y="${H - 9}" text-anchor="middle" font-size="11" fill="#7d8980">${lon.toFixed(2)}°</text><line x1="35" y1="${y(lat)}" x2="${W - 15}" y2="${y(lat)}" stroke="#e2e8e0"/><text x="7" y="${y(lat) - 3}" font-size="11" fill="#7d8980">${lat.toFixed(2)}°</text>`;
@@ -453,10 +455,10 @@ function renderMap() {
       west = ilon * step,
       south = ilat * step;
     if (
-      west + step < extent[0] ||
-      west > extent[2] ||
-      south + step < extent[1] ||
-      south > extent[3]
+      x(west + step) < 0 ||
+      x(west) > W ||
+      y(south) < 0 ||
+      y(south + step) > H
     ) {
       outside += c.inventory;
       return;
@@ -473,7 +475,7 @@ function renderMap() {
         : metric === "inventory"
           ? `rgb(${Math.round(220 - t * 199)},${Math.round(240 - t * 116)},${Math.round(227 - t * 111)})`
           : `rgb(${Math.round(250 - t * 29)},${Math.round(230 - t * 102)},${Math.round(211 - t * 123)})`;
-    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}" fill-opacity="0.55"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
+    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}" fill-opacity="0.32"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
   });
   for (const city of [
     "San Francisco",
@@ -482,6 +484,7 @@ function renderMap() {
     "San Jose",
     "Gilroy",
   ]) {
+    if ($("map-background").checked) continue;
     const local = points.filter((r) => r.city === city);
     if (!local.length) continue;
     const lon = local.map((r) => r.longitude).sort((a, b) => a - b)[
@@ -511,6 +514,9 @@ function renderMap() {
     ? `<span>${formatter(lo)}</span><span class="legend-ramp ${metric === "inventory" ? "" : "rent"}"></span><span>${formatter(hi)}</span><span>· gray = no price data · ${cells.length} cells · ${outside} listings outside viewport</span>`
     : "No usable prices in these cells.";
   const map = $("geo-svg");
+  map.dataset.scale = scale;
+  $("zoom-in").disabled = mapZoom >= 4;
+  $("zoom-out").disabled = mapZoom <= -2;
   let down = null;
   const at = (e) => {
     const p = map.createSVGPoint();
@@ -684,9 +690,18 @@ $("clear-geo").onclick = () => {
   $("bbox").value = "";
   load();
 };
+$("city").onchange = () => {
+  $("bbox").value = "";
+  fitAll = false;
+  $("fit-map").textContent = "Fit all points";
+  load();
+};
+$("zoom-in").onclick = () => { mapZoom = Math.min(4, mapZoom + 1); renderMap(); };
+$("zoom-out").onclick = () => { mapZoom = Math.max(-2, mapZoom - 1); renderMap(); };
 $("map-background").onchange = () => renderMap();
 $("map-metric").onchange = () => renderMap();
 $("fit-map").onclick = () => {
+  mapZoom = 0;
   fitAll = !fitAll;
   $("fit-map").textContent = fitAll ? "Bay Area extent" : "Fit all points";
   if (data) renderMap();

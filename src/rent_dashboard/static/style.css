@@ -647,3 +647,10 @@ dialog a {
 .chart .active-point { stroke: #fff; stroke-width: 3; r: 6; }
 
 .map-tile { pointer-events: none; filter: saturate(.35); }
+
+.map-frame { position: relative; overflow: hidden; border: 1px solid #d8e2dd; border-radius: 12px; }
+.map-controls { position: absolute; z-index: 2; top: 12px; right: 12px; display: grid; gap: 1px; box-shadow: 0 2px 10px #183d3026; }
+.map-controls button { background: white; color: #25483d; border: 0; border-radius: 3px; width: 36px; height: 36px; padding: 0; font-size: 24px; }
+#map svg { overflow: hidden; }
+.map-cell { stroke: #157c74; stroke-opacity: .35; stroke-width: .6; }
+.map-cell:hover, .map-cell:focus { stroke-opacity: 1; stroke-width: 2; fill-opacity: .65; outline: none; }

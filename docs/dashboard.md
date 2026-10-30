@@ -206,3 +206,12 @@ apply. Browser QA mocks tiles to avoid automated map downloads.
 
 Restart the SSH dashboard session after updating, then refresh your browser. The
 server now permits images from the tile host in its Content Security Policy.
+
+## October 30: clearer map and immediate city zoom
+
+Selecting a city now applies immediately and clears the previous geofence. The
+map fits that city's listings; +/− buttons adjust zoom without changing the data
+filter. Street tiles render at a sharper resolution, the redundant coordinate grid
+and duplicate city labels are hidden when streets are visible, and inventory fills
+are lighter so roads remain readable. Tile images are clipped to the map panel.
+Browser regression checks cover automatic city zoom and both zoom controls.
