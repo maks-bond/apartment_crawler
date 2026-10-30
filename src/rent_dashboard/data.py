@@ -76,6 +76,8 @@ class Store:
 
     def meta(self):
         result = {'today':datetime.now(timezone.utc).date().isoformat(),'sources':{},'cell_degrees':0.01}
+        map_config = self.project/'data/map-config.json'
+        result['carto_key'] = json.loads(map_config.read_text()).get('carto_key', '') if map_config.exists() else ''
         config = self.project/'config/craigslist.json'
         if config.exists():
             result['cell_degrees'] = json.loads(config.read_text()).get('geo_cell_degrees',0.01)

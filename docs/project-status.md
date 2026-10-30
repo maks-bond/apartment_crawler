@@ -131,3 +131,20 @@ filter. Street tiles render at a sharper resolution, the redundant coordinate gr
 and duplicate city labels are hidden when streets are visible, and inventory fills
 are lighter so roads remain readable. Tile images are clipped to the map panel.
 Browser regression checks cover automatic city zoom and both zoom controls.
+
+## October 30: searchable cities and minimal map
+
+The city field accepts typed names with browser suggestions; selecting a suggestion
+or leaving the field applies the city and zooms immediately. Clear it for all cities.
+The map is always on. A compact Map settings menu controls inventory opacity.
+CARTO Positron matches the Strava app's light basemap. With explicit user approval,
+the public basemap key was copied to ignored `data/map-config.json` (`carto_key`).
+This key is intentionally sent to the browser for tile requests, never committed.
+Without that file the dashboard uses OpenStreetMap tiles. Both attributions are
+shown when CARTO is configured. Restart the dashboard to pick up the server changes.
+
+Live CARTO verification returned HTTP 403 from localhost. The Strava project notes
+restrict the key to its hosted domains; localhost may need authorization in CARTO.
+Failed CARTO tiles automatically fall back to OpenStreetMap. The key was not printed
+or committed. Browser interactions passed with mocked tiles; live CARTO access is
+not yet working from this origin.

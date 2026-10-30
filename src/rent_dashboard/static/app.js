@@ -70,11 +70,8 @@ function configureSource(resetDates = true) {
   const source = $("source").value,
     cfg = meta.sources[source],
     community = source === "communities";
-  fill(
-    $("city"),
-    cfg.cities.map((x) => [x, x]),
-    "All cities",
-  );
+  $("city").value = "";
+  $("city-options").replaceChildren(...cfg.cities.map(city => new Option(city, city)));
   fill(
     $("property"),
     cfg.properties.map((x) => [x.id, x.name]),
@@ -434,20 +431,15 @@ function renderMap() {
     lo = Math.min(...priced.map((c) => c[metric])),
     hi = Math.max(...priced.map((c) => c[metric]));
   let svg = `<svg id="geo-svg" viewBox="0 0 ${W} ${H}" aria-label="Observed listing geographic cells. Click a cell or drag a rectangle to filter." role="img">`;
-  if ($("map-background").checked) {
+  {
     const z = Math.max(0, Math.min(16, Math.ceil(Math.log2(scale / 256))));
     const n = 2 ** z, tileSize = scale / n;
     const west = cx - W / 2 / scale, north = cy - H / 2 / scale;
     for (let tx = Math.floor(west * n); tx <= Math.floor((west + W / scale) * n); tx++) {
       for (let ty = Math.max(0, Math.floor(north * n)); ty <= Math.min(n - 1, Math.floor((north + H / scale) * n)); ty++) {
-        svg += `<image class="map-tile" x="${(tx / n - west) * scale}" y="${(ty / n - north) * scale}" width="${tileSize}" height="${tileSize}" href="https://tile.openstreetmap.org/${z}/${((tx % n) + n) % n}/${ty}.png"/>`;
+        svg += `<image class="map-tile" x="${(tx / n - west) * scale}" y="${(ty / n - north) * scale}" width="${tileSize}" height="${tileSize}" href="${esc(meta.carto_key ? `https://basemaps.cartocdn.com/rastertiles/light_all/${z}/${((tx % n) + n) % n}/${ty}.png?key=${encodeURIComponent(meta.carto_key)}` : `https://tile.openstreetmap.org/${z}/${((tx % n) + n) % n}/${ty}.png`)}"/>`;
       }
     }
-  }
-  for (let i = 0; !$("map-background").checked && i < 5; i++) {
-    const lon = extent[0] + ((extent[2] - extent[0]) * i) / 4,
-      lat = extent[1] + ((extent[3] - extent[1]) * i) / 4;
-    svg += `<line x1="${x(lon)}" y1="20" x2="${x(lon)}" y2="${H - 25}" stroke="#e2e8e0"/><text x="${x(lon)}" y="${H - 9}" text-anchor="middle" font-size="11" fill="#7d8980">${lon.toFixed(2)}°</text><line x1="35" y1="${y(lat)}" x2="${W - 15}" y2="${y(lat)}" stroke="#e2e8e0"/><text x="7" y="${y(lat) - 3}" font-size="11" fill="#7d8980">${lat.toFixed(2)}°</text>`;
   }
   let outside = 0;
   cells.forEach((c) => {
@@ -475,38 +467,22 @@ function renderMap() {
         : metric === "inventory"
           ? `rgb(${Math.round(220 - t * 199)},${Math.round(240 - t * 116)},${Math.round(227 - t * 111)})`
           : `rgb(${Math.round(250 - t * 29)},${Math.round(230 - t * 102)},${Math.round(211 - t * 123)})`;
-    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}" fill-opacity="0.32"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
+    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}" fill-opacity="${Number($("map-opacity").value) / 100}"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
   });
-  for (const city of [
-    "San Francisco",
-    "San Mateo",
-    "Mountain View",
-    "San Jose",
-    "Gilroy",
-  ]) {
-    if ($("map-background").checked) continue;
-    const local = points.filter((r) => r.city === city);
-    if (!local.length) continue;
-    const lon = local.map((r) => r.longitude).sort((a, b) => a - b)[
-        Math.floor(local.length / 2)
-      ],
-      lat = local.map((r) => r.latitude).sort((a, b) => a - b)[
-        Math.floor(local.length / 2)
-      ];
-    if (
-      lon >= extent[0] &&
-      lon <= extent[2] &&
-      lat >= extent[1] &&
-      lat <= extent[3]
-    )
-      svg += `<text x="${x(lon) + 8}" y="${y(lat) - 7}" font-size="12" fill="#344f48" stroke="#f7f9f6" stroke-width="3" paint-order="stroke" pointer-events="none">${esc(city)}</text>`;
-  }
   svg +=
     '<text x="813" y="22" font-size="12" fill="#67767a">N ↑</text><rect id="selection" fill="#157c7420" stroke="#157c74" stroke-dasharray="5 3" hidden="hidden"/></svg>';
   $("map").innerHTML = svg;
-  $("tile-status").textContent = $("map-background").checked ? "Street map · approximate listing locations" : "Street map hidden";
+  $("carto-credit").hidden = !meta.carto_key;
+  $("tile-status").textContent = "Approximate listing locations";
   $("map").querySelectorAll("image").forEach(tile => tile.addEventListener("error", () => {
-    $("tile-status").textContent = "Map tiles unavailable; inventory cells remain usable.";
+    const url = new URL(tile.getAttribute("href"));
+    if (url.hostname === "basemaps.cartocdn.com") {
+      const parts = url.pathname.split("/").slice(-3).join("/");
+      tile.setAttribute("href", "https://tile.openstreetmap.org/" + parts);
+      $("tile-status").textContent = "Using OpenStreetMap fallback; CARTO could not load.";
+    } else {
+      $("tile-status").textContent = "Map tiles unavailable; inventory cells remain usable.";
+    }
   }));
   const formatter =
     metric === "inventory" ? num : metric === "median_psf" ? psf : money;
@@ -691,6 +667,9 @@ $("clear-geo").onclick = () => {
   load();
 };
 $("city").onchange = () => {
+  const cities = meta.sources[$("source").value].cities;
+  const match = cities.find(city => city.toLowerCase() === $("city").value.trim().toLowerCase());
+  if (match) $("city").value = match;
   $("bbox").value = "";
   fitAll = false;
   $("fit-map").textContent = "Fit all points";
@@ -698,7 +677,9 @@ $("city").onchange = () => {
 };
 $("zoom-in").onclick = () => { mapZoom = Math.min(4, mapZoom + 1); renderMap(); };
 $("zoom-out").onclick = () => { mapZoom = Math.max(-2, mapZoom - 1); renderMap(); };
-$("map-background").onchange = () => renderMap();
+$("map-opacity").oninput = () => {
+  document.querySelectorAll(".map-cell").forEach(cell => cell.setAttribute("fill-opacity", Number($("map-opacity").value) / 100));
+};
 $("map-metric").onchange = () => renderMap();
 $("fit-map").onclick = () => {
   mapZoom = 0;

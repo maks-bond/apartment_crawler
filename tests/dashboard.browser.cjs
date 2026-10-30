@@ -18,10 +18,10 @@ const { chromium } = require("playwright");
       external = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("request", (r) => {
-      if (new URL(r.url()).origin !== new URL(url).origin && new URL(r.url()).hostname !== "tile.openstreetmap.org")
+      if (new URL(r.url()).origin !== new URL(url).origin && !["tile.openstreetmap.org", "basemaps.cartocdn.com"].includes(new URL(r.url()).hostname))
         external.push(r.url());
     });
-    await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({
+    await page.route(/https:\/\/(tile.openstreetmap.org|basemaps.cartocdn.com)\//, route => route.fulfill({
       contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1sAAAAASUVORK5CYII=", "base64")
     }));
     await page.goto(url);
@@ -29,10 +29,10 @@ const { chromium } = require("playwright");
       () => document.querySelectorAll("#kpis .kpi").length === 4,
     );
     assert.ok(await page.locator(".map-tile").count() > 0);
-    await page.locator("#map-background").uncheck();
-    assert.equal(await page.locator(".map-tile").count(), 0);
-    await page.locator("#map-background").check();
-    assert.ok(await page.locator(".map-tile").count() > 0);
+    assert.equal(await page.locator("#map-background").count(), 0);
+    await page.locator(".map-settings summary").click();
+    await page.locator("#map-opacity").fill("50");
+    assert.equal(await page.locator(".map-cell").first().getAttribute("fill-opacity"), "0.5");
     async function update(action) {
       const response = page.waitForResponse(
         (r) => new URL(r.url()).pathname === "/api/dashboard",
@@ -65,12 +65,12 @@ const { chromium } = require("playwright");
       assert.ok(await page.locator(".map-cell").count());
     }
     const cities = await page
-      .locator("#city option")
+      .locator("#city-options option")
       .evaluateAll((options) => options.map((o) => o.value).filter(Boolean));
     if (cities.length) {
       const before = Number(await page.locator("#geo-svg").getAttribute("data-scale"));
       const selectedCity = cities.includes("Mountain View") ? "Mountain View" : cities[0];
-      const city = await update(() => page.locator("#city").selectOption(selectedCity));
+      const city = await update(async () => { await page.locator("#city").fill(selectedCity); await page.locator("#city").press("Tab"); });
       assert.ok(city.listings.every((r) => r.city === selectedCity));
       const focused = Number(await page.locator("#geo-svg").getAttribute("data-scale"));
       assert.ok(focused > before, "Selecting a city must zoom immediately");
@@ -78,7 +78,7 @@ const { chromium } = require("playwright");
       assert.equal(Number(await page.locator("#geo-svg").getAttribute("data-scale")), focused * 2);
       await page.locator("#zoom-out").click();
       assert.equal(Number(await page.locator("#geo-svg").getAttribute("data-scale")), focused);
-      await update(() => page.locator("#city").selectOption(""));
+      await update(async () => { await page.locator("#city").fill(""); await page.locator("#city").press("Tab"); });
     }
     if (await page.locator(".listing-name").count()) {
       await page.locator(".listing-name").first().click();

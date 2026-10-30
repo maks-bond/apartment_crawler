@@ -28,9 +28,7 @@
               <option value="communities">Apartment communities</option>
             </select></label
           ><label
-            >City<select name="city" id="city">
-              <option value="">All cities</option>
-            </select></label
+            >City<input name="city" id="city" list="city-options" placeholder="All cities — type to search" autocomplete="off"><datalist id="city-options"></datalist></label
           ><label id="category-label"
             >Listing category<select name="category">
               <option value="">All categories</option>
@@ -138,9 +136,9 @@
                 </select></label
               >
             </div>
-            <label><input id="map-background" type="checkbox" checked> Street map</label>
+            <details class="map-settings"><summary>Map settings</summary><label>Inventory opacity<input id="map-opacity" type="range" min="10" max="80" value="32"></label></details>
             <div class="map-frame"><div class="map-controls"><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-out" type="button" aria-label="Zoom out">−</button></div><div id="map"></div></div>
-            <p class="caption">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · <span id="tile-status">Map background requires internet access.</span></p>
+            <p class="caption">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> <span id="carto-credit" hidden>· © <a href="https://carto.com/attributions">CARTO</a></span> · <span id="tile-status">Map background requires internet access.</span></p>
             <div id="map-legend" class="map-legend"></div>
             <button id="fit-map" class="outline" type="button">
               Fit all points
