@@ -262,7 +262,7 @@ function chart(
   svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
   points.forEach((p, i) => {
     if (p[key] != null)
-      svg += `<circle cx="${x(i)}" cy="${y(p[key])}" r="${points.length < 15 ? 4 : 2.5}" fill="${color}" tabindex="0"><title>${esc(p.day + " · " + format(p[key]) + " · priced n=" + p.priced + " · sq ft n=" + p.sqft_priced + " · coverage " + p.usable_sources + "/" + p.expected_sources + (key === "matched_change_pct" ? " · matched n=" + p.matched_count : ""))}</title></circle>`;
+      svg += `<circle cx="${x(i)}" cy="${y(p[key])}" r="${points.length < 15 ? 4 : 2.5}" fill="${color}" data-point="${i}" tabindex="0"><title>${esc(p.day + " · " + format(p[key]) + " · priced n=" + p.priced + " · sq ft n=" + p.sqft_priced + " · coverage " + p.usable_sources + "/" + p.expected_sources + (key === "matched_change_pct" ? " · matched n=" + p.matched_count : ""))}</title></circle>`;
   });
   const ticks = [0, Math.floor((points.length - 1) / 2), points.length - 1];
   for (const i of new Set(ticks)) {
@@ -272,7 +272,60 @@ function chart(
   svg += "</svg>";
   container.innerHTML =
     svg +
-    `<p class="chart-note">${values.length === 1 ? "Baseline only — another daily observation is needed for a trend." : "Hover or focus a point for sample size. Lines break when source coverage changes."}</p>`;
+    `<p class="chart-note">${values.length === 1 ? "Baseline only — another daily observation is needed for a trend." : "Hover, tap, or focus a point for values and sample sizes. Lines break when source coverage changes."}</p>`;
+  container.classList.add("interactive-chart");
+  const plot = container.querySelector("svg");
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.setAttribute("role", "status");
+  tooltip.hidden = true;
+  container.append(tooltip);
+  const ns = "http://www.w3.org/2000/svg";
+  const guide = document.createElementNS(ns, "line");
+  guide.setAttribute("class", "chart-guide");
+  guide.setAttribute("y1", top);
+  guide.setAttribute("y2", H - bottom);
+  guide.style.display = "none";
+  plot.append(guide);
+  function hide() {
+    tooltip.hidden = true;
+    guide.style.display = "none";
+    plot.querySelectorAll(".active-point").forEach(p => p.classList.remove("active-point"));
+  }
+  function show(i) {
+    const p = points[i];
+    if (!p) return;
+    const details = [];
+    if (p.priced != null) details.push(`Priced listings: ${p.priced}`);
+    if (p.sqft_priced != null) details.push(`Usable area: ${p.sqft_priced}`);
+    if (p.usable_sources != null) details.push(`Sources: ${p.usable_sources}/${p.expected_sources}`);
+    if (key === "matched_change_pct") details.push(`Matched listings: ${p.matched_count ?? 0}`);
+    tooltip.innerHTML = `<strong>${esc(p.day)}</strong><b>${esc(options.title || key)}: ${esc(p[key] == null ? "No comparable observation" : format(p[key]))}</b>${details.map(d => `<span>${esc(d)}</span>`).join("")}`;
+    tooltip.hidden = false;
+    guide.style.display = "";
+    guide.setAttribute("x1", x(i));
+    guide.setAttribute("x2", x(i));
+    plot.querySelectorAll("[data-point]").forEach(dot => dot.classList.toggle("active-point", Number(dot.dataset.point) === i));
+    const rect = plot.getBoundingClientRect();
+    const position = x(i) / W * rect.width;
+    tooltip.style.left = `${Math.max(0, Math.min(position + 12, container.clientWidth - tooltip.offsetWidth))}px`;
+    tooltip.style.top = "0px";
+  }
+  plot.addEventListener("pointermove", e => {
+    const rect = plot.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width * W;
+    show(Math.max(0, Math.min(points.length - 1, Math.round((px - left) / (W - left - right) * (points.length - 1)))));
+  });
+  plot.addEventListener("pointerdown", e => {
+    const rect = plot.getBoundingClientRect();
+    show(Math.max(0, Math.min(points.length - 1, Math.round(((e.clientX - rect.left) / rect.width * W - left) / (W - left - right) * (points.length - 1)))));
+  });
+  plot.addEventListener("pointerleave", hide);
+  plot.addEventListener("focusin", e => {
+    if (e.target.dataset.point != null) show(Number(e.target.dataset.point));
+  });
+  plot.addEventListener("focusout", hide);
+  plot.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
 }
 function renderTrends() {
   chart($("chart-price"), data.series, "median_price", money, "#157c74", {
@@ -366,28 +419,29 @@ function renderMap() {
   const W = 850,
     H = 480,
     pad = 40;
-  const scale = Math.min(
-    (W - pad * 2) / ((extent[2] - extent[0]) * Math.cos((37 * Math.PI) / 180)),
-    (H - pad * 2) / (extent[3] - extent[1]),
-  );
-  const x = (lon) =>
-      W / 2 +
-      (lon - (extent[0] + extent[2]) / 2) *
-        scale *
-        Math.cos((37 * Math.PI) / 180),
-    y = (lat) => H / 2 - (lat - (extent[1] + extent[3]) / 2) * scale;
-  viewport = {
-    x,
-    y,
-    lon: (px) =>
-      (extent[0] + extent[2]) / 2 +
-      (px - W / 2) / (scale * Math.cos((37 * Math.PI) / 180)),
-    lat: (py) => (extent[1] + extent[3]) / 2 - (py - H / 2) / scale,
-  };
+  const mercY = lat => (1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2;
+  const invY = v => Math.atan(Math.sinh(Math.PI * (1 - 2 * v))) * 180 / Math.PI;
+  const cx = ((extent[0] + extent[2]) / 2 + 180) / 360;
+  const cy = (mercY(extent[1]) + mercY(extent[3])) / 2;
+  const scale = Math.min((W - pad * 2) / ((extent[2] - extent[0]) / 360), (H - pad * 2) / (mercY(extent[1]) - mercY(extent[3])));
+  const x = lon => W / 2 + ((lon + 180) / 360 - cx) * scale;
+  const y = lat => H / 2 + (mercY(lat) - cy) * scale;
+  viewport = { x, y, lon: px => (cx + (px - W / 2) / scale) * 360 - 180,
+    lat: py => invY(cy + (py - H / 2) / scale) };
   const priced = cells.filter((c) => c[metric] != null),
     lo = Math.min(...priced.map((c) => c[metric])),
     hi = Math.max(...priced.map((c) => c[metric]));
   let svg = `<svg id="geo-svg" viewBox="0 0 ${W} ${H}" aria-label="Observed listing geographic cells. Click a cell or drag a rectangle to filter." role="img">`;
+  if ($("map-background").checked) {
+    const z = Math.max(0, Math.min(16, Math.floor(Math.log2(scale / 256))));
+    const n = 2 ** z, tileSize = scale / n;
+    const west = cx - W / 2 / scale, north = cy - H / 2 / scale;
+    for (let tx = Math.floor(west * n); tx <= Math.floor((west + W / scale) * n); tx++) {
+      for (let ty = Math.max(0, Math.floor(north * n)); ty <= Math.min(n - 1, Math.floor((north + H / scale) * n)); ty++) {
+        svg += `<image class="map-tile" x="${(tx / n - west) * scale}" y="${(ty / n - north) * scale}" width="${tileSize}" height="${tileSize}" href="https://tile.openstreetmap.org/${z}/${((tx % n) + n) % n}/${ty}.png"/>`;
+      }
+    }
+  }
   for (let i = 0; i < 5; i++) {
     const lon = extent[0] + ((extent[2] - extent[0]) * i) / 4,
       lat = extent[1] + ((extent[3] - extent[1]) * i) / 4;
@@ -419,7 +473,7 @@ function renderMap() {
         : metric === "inventory"
           ? `rgb(${Math.round(220 - t * 199)},${Math.round(240 - t * 116)},${Math.round(227 - t * 111)})`
           : `rgb(${Math.round(250 - t * 29)},${Math.round(230 - t * 102)},${Math.round(211 - t * 123)})`;
-    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
+    svg += `<rect class="map-cell" data-cell="${esc(c.cell)}" tabindex="0" x="${x(west)}" y="${y(south + step)}" width="${x(west + step) - x(west)}" height="${y(south) - y(south + step)}" fill="${color}" fill-opacity="0.55"><title>${esc(c.cell + " · " + c.inventory + " observed listings · median rent " + money(c.median_price) + " · " + psf(c.median_psf) + "/sq ft · sq ft n=" + c.sqft_priced)}</title></rect>`;
   });
   for (const city of [
     "San Francisco",
@@ -447,6 +501,10 @@ function renderMap() {
   svg +=
     '<text x="813" y="22" font-size="12" fill="#67767a">N ↑</text><rect id="selection" fill="#157c7420" stroke="#157c74" stroke-dasharray="5 3" hidden="hidden"/></svg>';
   $("map").innerHTML = svg;
+  $("tile-status").textContent = $("map-background").checked ? "Street map · approximate listing locations" : "Street map hidden";
+  $("map").querySelectorAll("image").forEach(tile => tile.addEventListener("error", () => {
+    $("tile-status").textContent = "Map tiles unavailable; inventory cells remain usable.";
+  }));
   const formatter =
     metric === "inventory" ? num : metric === "median_psf" ? psf : money;
   $("map-legend").innerHTML = priced.length
@@ -626,6 +684,7 @@ $("clear-geo").onclick = () => {
   $("bbox").value = "";
   load();
 };
+$("map-background").onchange = () => renderMap();
 $("map-metric").onchange = () => renderMap();
 $("fit-map").onclick = () => {
   fitAll = !fitAll;

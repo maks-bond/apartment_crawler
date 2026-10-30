@@ -18,13 +18,21 @@ const { chromium } = require("playwright");
       external = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("request", (r) => {
-      if (new URL(r.url()).origin !== new URL(url).origin)
+      if (new URL(r.url()).origin !== new URL(url).origin && new URL(r.url()).hostname !== "tile.openstreetmap.org")
         external.push(r.url());
     });
+    await page.route("https://tile.openstreetmap.org/**", route => route.fulfill({
+      contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1sAAAAASUVORK5CYII=", "base64")
+    }));
     await page.goto(url);
     await page.waitForFunction(
       () => document.querySelectorAll("#kpis .kpi").length === 4,
     );
+    assert.ok(await page.locator(".map-tile").count() > 0);
+    await page.locator("#map-background").uncheck();
+    assert.equal(await page.locator(".map-tile").count(), 0);
+    await page.locator("#map-background").check();
+    assert.ok(await page.locator(".map-tile").count() > 0);
     async function update(action) {
       const response = page.waitForResponse(
         (r) => new URL(r.url()).pathname === "/api/dashboard",
@@ -78,6 +86,14 @@ const { chromium } = require("playwright");
       assert.equal(await page.locator("#history-dialog").isVisible(), false);
     }
     await page.locator('[data-view="trends"]').click();
+    const plot = page.locator("#chart-price svg");
+    await plot.hover();
+    await page.locator("#chart-price .chart-tooltip:not([hidden])").waitFor();
+    assert.match(await page.locator("#chart-price .chart-tooltip").innerText(), /Sources:/);
+    await page.locator("#chart-price [data-point]").first().focus();
+    assert.match(await page.locator("#chart-price .chart-tooltip").innerText(), /20\d\d-/);
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#chart-price .chart-tooltip").isVisible(), false);
     await page.screenshot({
       path: artifacts + "/craigslist-trends.png",
       fullPage: true,
@@ -116,7 +132,7 @@ const { chromium } = require("playwright");
     assert.deepEqual(errors, []);
     assert.deepEqual(external, []);
     console.log(
-      "Browser checks passed: filters, geographic cells, listing history, trends, health, mobile layout; no external requests or browser errors.",
+      "Browser checks passed: filters, geographic cells, listing history, trends, health, mobile layout; mocked street tiles; no unexpected external requests or browser errors.",
     );
   } finally {
     await browser.close();

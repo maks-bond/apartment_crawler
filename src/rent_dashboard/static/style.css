@@ -638,3 +638,12 @@ dialog a {
 .map-legend {
   flex-wrap: wrap;
 }
+
+.interactive-chart { position: relative; }
+.chart-tooltip { position: absolute; z-index: 5; max-width: min(270px, 100%); padding: 12px 15px; border: 1px solid #ccdcd5; border-radius: 10px; background: #fff; color: #223b35; box-shadow: 0 5px 20px #183d3026; pointer-events: none; font-size: 12px; box-sizing: border-box; }
+.chart-tooltip strong, .chart-tooltip b, .chart-tooltip span { display: block; margin: 3px 0; }
+.chart-tooltip strong { color: #67767a; }
+.chart-guide { stroke: #647c73; stroke-dasharray: 4 4; pointer-events: none; }
+.chart .active-point { stroke: #fff; stroke-width: 3; r: 6; }
+
+.map-tile { pointer-events: none; filter: saturate(.35); }

@@ -1,6 +1,25 @@
 # Apartment Monitor Project Status
 
-Last updated: 2026-10-11 (America/Los_Angeles)
+Last updated: 2026-10-29 (America/Los_Angeles)
+
+## October 29 dashboard update
+
+Trend plots and individual listing histories now show immediate hover cards with
+values, dates and available sample/coverage counts. Hover anywhere across a plot,
+tap, or focus a point with the keyboard; Escape dismisses the card. Missing values
+remain explicitly unavailable.
+
+Inventory cells now overlay a muted OpenStreetMap street background using matching
+Web Mercator coordinates. Select a city or geofence for a closer view. The Street
+map checkbox hides external tiles; failed tile loading leaves data and filters usable.
+Tiles are requested directly by the browser only for the current viewport, with
+normal browser caching and visible attribution. Daily collectors do not fetch tiles.
+Restart the dashboard process to load the updated image security policy, then refresh.
+
+Operations review: Craigslist collected all nine searches on each of October 11–29
+(171/171). Ten detail pages returned 410; 1,700 succeeded. Seven communities remain
+consistent, Martin/Avelle return 403, and Villa Del Sol has intermittent incomplete
+responses. Daily scheduling remains enabled.
 
 ## October 11 update
 

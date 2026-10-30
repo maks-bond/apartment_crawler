@@ -29,7 +29,7 @@ range, short-term preference, community, and date range. Click a city to filter.
 Click a geographic cell or drag a rectangle to apply a geofence to the current
 view and every historical day. Clear it through Geofence coordinates. The default
 map covers the target Bay Area; the legend counts out-of-viewport ads, and Fit all
-points includes them. This is an offline coordinate grid, not a street map.
+points includes them. A street background provides context; switch it off to use the coordinate grid offline.
 Community coordinates have not been validated, so those use city filters instead.
 
 An individual history popup shows all stored history, independently of the main
@@ -182,9 +182,27 @@ temporary SSH configuration using OpenSSH's effective-option output.
 Optional real-data browser QA uses Playwright, installed separately from the app:
 start the dashboard, then run `node tests/dashboard.browser.cjs` with Playwright on
 Node's module path. This checks filters, map selection, dialogs, trends, health,
-mobile layout and absence of external web requests. Screenshots go under ignored
+mobile layout and absence of unexpected external web requests (street tiles are mocked). Screenshots go under ignored
 `reports/dashboard-preview/`. Browser tooling is not a dashboard runtime dependency.
 
 The client refreshes when opened or when Refresh data is pressed; no polling or
 background service is required. The server reads fresh snapshots for each API
 request, so concurrent daily collection can continue independently.
+
+## October 29: interactive plots and street context
+
+Hover anywhere in a plot to see its nearest date and value, with sample size and
+source coverage where available. Individual listing charts support the same cards.
+Keyboard focus and touch are supported; Escape dismisses the card.
+
+The inventory map now includes a muted OpenStreetMap background. Choose a city
+for a closer street view, then click a cell or drag a geofence. The Street map
+checkbox disables the background. Inventory rectangles still represent approximate
+advertised coordinates, not verified property addresses. Tiles load directly from
+`tile.openstreetmap.org` with browser caching; no keys or added runtime packages are
+needed. Internet access is needed for tiles only. On failure the cells remain usable.
+Attribution and [tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
+apply. Browser QA mocks tiles to avoid automated map downloads.
+
+Restart the SSH dashboard session after updating, then refresh your browser. The
+server now permits images from the tile host in its Content Security Policy.
